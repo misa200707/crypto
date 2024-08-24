@@ -1,41 +1,29 @@
 from flask import Flask, render_template, request, jsonify
-from datetime import datetime, timedelta
+import time
 
 app = Flask(__name__)
 
-# Ajastimen loppuaika (24 tuntia nykyisestä ajasta)
-end_time = datetime.now() + timedelta(days=1)
+# Your Solana wallet address
+SOLANA_ADDRESS = '9tF5acx2XK2P3Rh3WGt8PhazhjNeZMtSxrBdVUvDPq4k'
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/calculate', methods=['POST'])
-def calculate():
-    sol_amount = float(request.json['solAmount'])
-    pepe_amount = sol_amount * 1200
-    return jsonify(pepeAmount=pepe_amount)
-
-@app.route('/timer')
-def timer():
-    remaining_time = end_time - datetime.now()
-    seconds_left = remaining_time.total_seconds()
-    if seconds_left <= 0:
-        # Jos aika on loppunut, aloita uusi ajastin
-        global end_time
-        end_time = datetime.now() + timedelta(days=1)
-        seconds_left = 86400  # 24 tuntia sekunteina
-    return jsonify(seconds_left=seconds_left)
+@app.route('/api/verify_payment', methods=['POST'])
+def verify_payment():
+    # This is where you would implement logic to verify payment on the Solana blockchain.
+    # For now, this is a mock implementation.
+    data = request.json
+    sol_amount = data.get('solAmount')
+    print(f"Received payment verification request for {sol_amount} SOL.")
+    
+    # Simulate verification delay
+    time.sleep(2)
+    
+    # Simulate a successful payment verification response
+    return jsonify({'status': 'success', 'message': 'Payment verified successfully!'})
 
 if __name__ == '__main__':
     app.run(debug=True)
-from flask import Flask, render_template
 
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
