@@ -81,3 +81,83 @@ footer {
     width: 100%;
     font-size: 14px;
 }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeCoin Presale with MetaMask</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>PepeCoin Presale</h1>
+    </header>
+
+    <main>
+        <section>
+            <h2>Buy PepeCoin</h2>
+            <p>1 SOL = 1200 PepeCoin</p>
+            <form id="purchaseForm">
+                <label for="solAmount">Enter amount of SOL:</label>
+                <input type="number" id="solAmount" name="solAmount" step="0.01" required>
+                <p>You will receive: <span id="pepeAmount">0</span> PepeCoin</p>
+                <button type="button" id="buyButton">Buy PepeCoin with MetaMask</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 PepeCoin. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.36/dist/web3.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let pepeAmount = 0;
+            const solAmountInput = document.getElementById('solAmount');
+            const pepeAmountSpan = document.getElementById('pepeAmount');
+            const buyButton = document.getElementById('buyButton');
+
+            solAmountInput.addEventListener('input', function () {
+                const solAmount = parseFloat(solAmountInput.value);
+                if (!isNaN(solAmount)) {
+                    pepeAmount = solAmount * 1200;
+                    pepeAmountSpan.textContent = pepeAmount.toFixed(2);
+                } else {
+                    pepeAmountSpan.textContent = '0';
+                }
+            });
+
+            buyButton.addEventListener('click', async function() {
+                if (typeof window.ethereum !== 'undefined') {
+                    try {
+                        // Request account access if needed
+                        await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                        // Instantiate web3 object
+                        const web3 = new Web3(window.ethereum);
+
+                        // Set up the transaction parameters
+                        const transactionParameters = {
+                            to: '0xYourSolanaAddressHere', // Solana address converted to a format usable by MetaMask
+                            value: web3.utils.toHex(web3.utils.toWei(solAmountInput.value, 'ether')),
+                            gas: '21000',
+                        };
+
+                        // Send transaction
+                        const txHash = await web3.eth.sendTransaction(transactionParameters);
+                        alert('Transaction successful! Tx Hash: ' + txHash.transactionHash);
+                    } catch (error) {
+                        console.error(error);
+                        alert('Transaction failed: ' + error.message);
+                    }
+                } else {
+                    alert('MetaMask is not installed. Please install it to proceed.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
