@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeCoin Sale</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PepeCoin Presale with Phantom</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header>
         <h1>PepeCoin Presale</h1>
-        <p id="timer"></p>
     </header>
 
     <main>
@@ -20,54 +19,105 @@
                 <label for="solAmount">Enter amount of SOL:</label>
                 <input type="number" id="solAmount" name="solAmount" step="0.01" required>
                 <p>You will receive: <span id="pepeAmount">0</span> PepeCoin</p>
-                <button type="submit">Buy PepeCoin</button>
+                <p>Time left: <span id="timer">05:00</span></p>
+                <button type="button" id="buyButton">Buy PepeCoin with Phantom</button>
             </form>
         </section>
     </main>
 
     <footer>
-        <p>Send SOL to the following address: 9tF5acx2XK2P3Rh3WGt8PhazhjNeZMtSxrBdVUvDPq4k</p>
         <p>&copy; 2024 PepeCoin. All rights reserved.</p>
     </footer>
 
     <script>
-        // Timer setup
-        function startTimer(duration, display) {
-            let timer = duration, hours, minutes, seconds;
-            setInterval(function () {
-                hours = Math.floor((timer % 86400) / 3600);
-                minutes = Math.floor((timer % 3600) / 60);
-                seconds = timer % 60;
+        document.addEventListener("DOMContentLoaded", function() {
+            let pepeAmount = 0;
+            const solAmountInput = document.getElementById('solAmount');
+            const pepeAmountSpan = document.getElementById('pepeAmount');
+            const buyButton = document.getElementById('buyButton');
 
-                hours = hours < 10 ? "0" + hours : hours;
-                minutes = minutes < 10 ? "0" + minutes : minutes;
-                seconds = seconds < 10 ? "0" + seconds : seconds;
+            solAmountInput.addEventListener('input', function () {
+                const solAmount = parseFloat(solAmountInput.value);
+                if (!isNaN(solAmount)) {
+                    pepeAmount = solAmount * 1200;
+                    pepeAmountSpan.textContent = pepeAmount.toFixed(2);
+                } else {
+                    pepeAmountSpan.textContent = '0';
+                }
+            });
 
-                display.textContent = "Time left: " + hours + ":" + minutes + ":" + seconds;
+            buyButton.addEventListener('click', async function() {
+                if (window.solana && window.solana.isPhantom) {
+                    try {
+                        // Connect to Phantom wallet
+                        await window.solana.connect();
 
-                if (--timer < 0) {
-                    timer = duration; // Reset timer
+                        const provider = window.solana;
+                        const solAmount = solAmountInput.value;
+
+                        // Create the transaction
+                        const transaction = {
+                            to: '{{ SOLANA_ADDRESS }}',
+                            value: solAmount,
+                            gas: '21000',
+                        };
+
+                        // Send the transaction
+                        const response = await provider.request({
+                            method: "transfer",
+                            params: {
+                                to: transaction.to,
+                                value: transaction.value,
+                            }
+                        });
+
+                        if (response.error) {
+                            throw new Error(response.error.message);
+                        }
+
+                        alert('Transaction successful! Tx Signature: ' + response.result.signature);
+
+                        // Verify payment on the backend
+                        const verificationResponse = await fetch('/api/verify_payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ solAmount })
+                        });
+
+                        const verificationResult = await verificationResponse.json();
+                        if (verificationResult.status === 'success') {
+                            alert(verificationResult.message);
+                        } else {
+                            alert('Payment verification failed.');
+                        }
+
+                    } catch (error) {
+                        console.error(error);
+                        alert('Transaction failed: ' + error.message);
+                    }
+                } else {
+                    alert('Phantom wallet is not installed. Please install it to proceed.');
+                }
+            });
+
+            // Timer functionality
+            const timerElement = document.getElementById('timer');
+            let timeLeft = 300; // 5 minutes in seconds
+
+            const countdown = setInterval(function() {
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    timerElement.textContent = '00:00';
+                    buyButton.disabled = true;
+                } else {
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    timeLeft--;
                 }
             }, 1000);
-        }
-
-        window.onload = function () {
-            let oneDay = 24 * 60 * 60; // 24 hours in seconds
-            let display = document.querySelector('#timer');
-            startTimer(oneDay, display);
-        };
-
-        // PepeCoin calculation
-        document.getElementById('solAmount').addEventListener('input', function () {
-            let solAmount = parseFloat(this.value);
-            let pepeAmount = solAmount * 1200;
-            document.getElementById('pepeAmount').textContent = pepeAmount.toFixed(2);
-        });
-
-        // Handle form submission
-        document.getElementById('purchaseForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            alert("To complete the purchase, send SOL to the address provided.");
         });
     </script>
 </body>
